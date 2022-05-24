@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&display=block&text=ポケモンカード総当たり" rel="stylesheet">
+    <style>
+      :root {
+        --main-bg-color: #c9e2e1;
+        --main-fg-color: #39464a;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      header {
+        background: var(--main-bg-color);
+        margin: 0;
+      }
+      header h1 {
+        color: var(--main-fg-color);
+        font-family: 'Zen Maru Gothic', sans-serif;
+        font-size: 8vw;
+        margin: 0;
+        padding: 100px 0;
+        text-align: center;
+      }
+      main {
+        padding: 20px;
+      }
+      footer {
+        background: var(--main-fg-color);
+        padding: 30px 0;
+      }
+      footer ul {
+        color: white;
+        list-style: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>ポケモンカード総当たり</h1>
+    </header>
+    <main>
+      <form action="<?= ScriptApp.getService().getUrl() ?>" method="GET">
+        <h2>スプレッドシートの選択</h2>
+        <p>
+          <label for="spreadsheetId">スプレッドシートのID：</label>
+          <input id="spreadsheetId" name="spreadsheetId" type="text" size="60" list="spreadsheets">
+        </p>
+        <datalist id="spreadsheets">
+          <? for (const spreadsheet of spreadsheets) { ?>
+            <option value="<?= spreadsheet.id ?>"><?= spreadsheet.title ?></option>
+          <? } ?>
+        </datalist>
+        <p><button>決定</button></p>
+      </form>
+      <p>総当たり戦の結果を記録するスプレッドシートを指定します。</p>
+    </main>
+    <footer>
+      <ul>
+        <li>Created by umireon.</li>
+      </ul>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&display=block&text=ポケモンカード総当たり" rel="stylesheet">
+    <style>
+      :root {
+        --main-bg-color: #c9e2e1;
+        --main-fg-color: #39464a;
+      }
+      body {
+        color: var(--main-fg-color);
+        background: var(--main-bg-color);
+      }
+      main {
+        width: 600px;
+        margin: auto;
+      }
+      header h1 {
+        font-family: 'Zen Maru Gothic', sans-serif;
+      }
+      form {
+        text-align: center;
+      }
+      form * {
+        font-size: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>ポケモンカード総当たり</h1>
+        <h2>スプレッドシート初期化完了</h2>
+      </header>
+      <form action="<?= ScriptApp.getService().getUrl() ?>" method="GET">
+        <button>対戦を表示する</button>
+        <input name="round" type="hidden" value="1">
+        <input name="spreadsheetId" type="hidden" value="<?= spreadsheetId ?>">
+      </form>
+    </main>
+  </body>
+</html>

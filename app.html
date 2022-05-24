@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700&display=block&text=ポケモンカード総当たり" rel="stylesheet">
+    <style>
+      :root {
+        --main-bg-color: #c9e2e1;
+        --main-fg-color: #39464a;
+      }
+      body {
+        color: var(--main-fg-color);
+        background: var(--main-bg-color);
+      }
+      main {
+        width: 600px;
+        margin: auto;
+      }
+      header h1 {
+        font-family: 'Zen Maru Gothic', sans-serif;
+      }
+      #matches {
+        background: white;
+        color: black;
+      }
+      #matches h2 {
+        text-align: center;
+      }
+      #matches p, #matches input {
+        text-align: center;
+        font-size: 30px;
+        margin: 0;
+      }
+      #matches button, #matches label {
+        font-size: 30px;
+        margin: 0;
+      }
+      #matches input[type=number] {
+        width: 50px;
+      }
+      #matches #matches-list {
+        display: grid;
+      }
+      #matches #matches-list .rest {
+        grid-row: 100;
+      }
+      #timer iframe {
+        width: 100%;
+        height: 500px;
+      }
+      #leaderboard {
+        background: white;
+        color: black;
+      }
+      #leaderboard ol {
+        padding-left: 4ex;
+      }
+      #leaderboard li {
+        font-size: 30px;
+      }
+      #leaderboard input {
+        font-size: 30px;
+        margin: 0;
+      }
+      #participants-entry {
+        color: black;
+        background: white;
+      }
+      #participants-entry label, #participants-entry button {
+        font-size: 30px;
+        margin: 0;
+      }
+      #participants-entry input {
+        width: 1.5em;
+        font-size: 30px;
+        margin: 0;
+      }
+      #participants-entry div input {
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+      }
+      #showPlaces {
+        width: 100%;
+        font-size: 130px !important;
+      }
+      #timer {
+        display: grid;
+        grid-template: "h2 h2"
+                       "input button"
+                       "iframe iframe" / 1fr max-content;
+      }
+      #timer h2 {
+        grid-area: h2;
+      }
+      #timer input {
+        grid-area: input;
+      }
+      #timer button {
+        grid-area: button;
+      }
+      #timer iframe {
+        grid-area: iframe;
+      }
+    </style>
+    <script>
+      function onClickAddParticipant() {
+        const numOfAddingInput = document.querySelector('#number-of-adding')
+        const numOfAdding = numOfAddingInput.value
+        numOfAddingInput.value = 1
+        const participantsDiv = document.querySelector('section#participants-entry div')
+        for (let i = 0; i < numOfAdding; i++) {
+          const p = document.createElement('p')
+          const input = document.createElement('input')
+          input.setAttribute('name', 'participants')
+          input.setAttribute('type', 'text')
+          participantsDiv.appendChild(input)
+        }
+      }
+
+      function onClickShuffle() {
+        const participantsDiv = document.querySelector('section#participants-entry div')
+        const participantsP = Array.from(participantsDiv.children).sort(() => Math.random() - 0.5)
+        for (const participant of participantsP) {
+          participantsDiv.removeChild(participant)
+          participantsDiv.appendChild(participant)
+        }
+      }
+
+      function onClickShowUrl() {
+        const iframe = document.querySelector('iframe')
+        const urlInput = document.querySelector('input#url')
+        const matchesYouTube = urlInput.value.match(/v=(.*)$/)
+        console.log(matchesYouTube)
+        if (matchesYouTube) {
+          iframe.src = 'https://www.youtube.com/embed/' + matchesYouTube[1]
+        }
+      }
+
+      const takenSideTable = JSON.parse("<?= JSON.stringify(takenSideTable) ?>")
+      const roundRobinList = JSON.parse("<?= JSON.stringify(roundRobinList) ?>")
+      const participants = JSON.parse("<?= JSON.stringify(participants) ?>")
+
+      function calculatePlaces(round, participants, roundRobinList, takenSideTable) {
+        const places = participants.map(participant => [0, 0, participant])
+        for (let i = 0; i < round; i++) {
+          const matches = roundRobinList[i]
+          for (const match of matches) {
+            if (Math.max(...match) === participants.length) continue
+            const [x, y] = match
+            const xSide = takenSideTable[x][y]
+            const ySide = takenSideTable[y][x]
+            if (xSide == 6) {
+              places[x][0]++
+            } else if (ySide == 6) {
+              places[y][0]++
+            }
+            places[x][1] += xSide
+            places[y][1] += ySide
+          }
+        }
+        return places.sort(([xWins, xSideTaken], [yWins, ySideTaken]) =>
+          xWins !== yWins ? yWins - xWins : ySideTaken - xSideTaken
+        )
+      }
+
+      function handleClickTimerUrl() {
+        const input = document.querySelector('#timer input')
+        const iframe = document.querySelector('#timer iframe')
+        iframe.src = input.value
+        sessionStorage.setItem('timerUrl', input.value)
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>ポケモンカード総当たり</h1>
+        <h2>マッチメイカー</h2>
+      </header>
+      <article id="matches">
+        <h2>ラウンド <?= round ?> / <?= maxRound ?></h2>
+        <form action="<?= ScriptApp.getService().getUrl() ?>" method="GET">
+          <div id="matches-list">
+            <? const restIndex = participants.length % 2 === 1 ? participants.length : -1 ?>
+            <? for (let i = 0; i < matches.length; i++) { ?>
+              <? const match = matches[i] ?>
+              <? if (match.includes(restIndex)) { ?>
+                <p class="rest">
+                  <?= participants[Math.min(...match)] ?>は休憩
+                  <input name="x" type="hidden" value="-1">
+                  <input name="y" type="hidden" value="-1">
+                </p>
+              <? } else { ?>
+                <p>
+                  <?= participants[match[0]] ?><input name="x" type="number" size="1" min="0" max="6" value="<?= sides[i][0] ?>">
+                  対
+                  <?= participants[match[1]] ?><input name="y" type="number" size="1" min="0" max="6" value="<?= sides[i][1] ?>">
+                </p>
+              <? } ?>
+            <? } ?>
+          </div>
+          <input type="hidden" name="saveRound" value="<?= round ?>">
+          <input name="spreadsheetId" type="hidden" value="<?= spreadsheetId ?>">
+          <label for="round">ラウンド：</label>
+          <input id="round" name="round" type="number" value="<?= round ?>" min="1" max="<?= maxRound ?>">
+          <button>保存と表示</button>
+          <input name="spreadsheetId" type="hidden" value="<?= spreadsheetId ?>">
+          <? if (round === maxRound) { ?>
+            <button id="showPlaces" name="showPlaces" value="true">順位表示</button>
+          <? } ?>
+        </form>
+      </article>
+      <section id="timer">
+        <h2>タイマー</h2>
+        <input type="url">
+        <button type="button" onclick="handleClickTimerUrl()">表示</button>
+        <iframe></iframe>
+      </section>
+      <script>
+        const timerUrl = sessionStorage.getItem('timerUrl') || 'https://vclock.jp/のタイマー-25-分/#'
+        const iframe = document.querySelector('#timer iframe')
+        const input = document.querySelector('#timer input')
+        iframe.src = input.value = timerUrl
+      </script>
+      <article id="leaderboard"></article>
+      <script type="text/babel">
+        const LeaderBoard = () => {
+          const [round, setRound] = React.useState(<?= round ?> - 1 || 1)
+          const [places, setPlaces] = React.useState(calculatePlaces(round, participants, roundRobinList, takenSideTable))
+          const handleChangeRound = (e) => {
+            setPlaces(calculatePlaces(e.target.value, participants, roundRobinList, takenSideTable))
+            setRound(e.target.value)
+          }
+          return (
+            <article id="leaderboard">
+              <h2>
+                <label htmlFor="leaderboard-round">ラウンド</label>
+                <input id="leaderboard-round" type="number" min="1" max="<?= maxRound ?>" value={round} onChange={handleChangeRound} />
+                までの順位
+              </h2>
+              <ol>
+                {places.map(place => <li>{place[2]}：{place[0]}勝／{place[1]}枚</li>)}
+              </ol>
+            </article>
+          )
+        }
+
+        const leaderboardDomContainer = document.querySelector('#leaderboard');
+        const leaderboardRoot = ReactDOM.createRoot(leaderboardDomContainer);
+        leaderboardRoot.render(<LeaderBoard />);
+      </script>
+      <? if (round === 1) { ?>
+        <section id="participants-entry">
+          <h2>参加者設定</h2>
+          <form action="<?= ScriptApp.getService().getUrl() ?>" method="GET">
+            <label for="number-of-adding">参加者</label>
+            <input id="number-of-adding" type="number" value="1" min="1">
+            <button type="button" onclick="onClickAddParticipant()">人追加</button>
+            <div></div>
+            <button type="button" onclick="onClickShuffle()">シャッフル</button>
+            <button name="init" value="init">シート設定</button>
+            <input name="round" type="hidden" value="1">
+            <input name="spreadsheetId" type="hidden" value="<?= spreadsheetId ?>">
+          </form>
+        </section>
+      <? } ?>
+      <section id="links">
+        <ul>
+          <li><a href="https://www.youtube.com" target="_blank">YouTube</a></li>
+        </ul>
+        <form action="<?= ScriptApp.getService().getUrl() ?>" method="GET">
+          <p><button>シート選択に戻る</button></p>
+          <p>
+            <a href="https://docs.google.com/spreadsheets/d/<?= spreadsheetId ?>/edit#gid=0" target="_blank">
+              <button type="button">スプレッドシートを開く</button>
+            </a>
+          </p>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
